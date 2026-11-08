@@ -1,0 +1,24 @@
+{
+  "name": "joplin-server-clipper",
+  "private": true,
+  "scripts": {
+    "postinstall": "npm --prefix popup ci --ignore-scripts --no-audit --no-fund",
+    "build:helpers": "tsc --project tsconfig.helpers.json",
+    "build": "npm run build:helpers && npm --prefix popup run build",
+    "watch": "npm run build:helpers && npm --prefix popup run watch",
+    "test": "node --test util/*.test.mjs"
+  },
+  "version": "1.0.0",
+  "description": "Unofficial browser extension for clipping directly to self-hosted Joplin Server",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deckard-Li/joplin-server-clipper.git"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
