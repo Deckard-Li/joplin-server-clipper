@@ -37,7 +37,7 @@ The installation command also installs the popup dependencies from its lockfile.
 3. Enter the server's base URL, email, and password, then select **Sign in**. Include any reverse-proxy path prefix, but do not append `/api`.
 4. Select a notebook and clip. Empty accounts offer **Create Web Clippings notebook**.
 
-Remote servers must use HTTPS. HTTP is allowed only for localhost development. This extension supports Joplin Server, not arbitrary WebDAV endpoints. New clips appear in other Joplin clients on their next sync. Select **Disconnect server** to return to the desktop connection.
+Both HTTP and HTTPS are supported, including local-network URLs such as `http://192.168.1.20:22300` or `http://joplin.local:22300`. HTTP sends your password, session token, and note content unencrypted: use it only on a trusted local network and use HTTPS over the internet. This extension supports Joplin Server, not arbitrary WebDAV endpoints. New clips appear in other Joplin clients on their next sync. Select **Disconnect server** to return to the desktop connection.
 
 The password is used only for sign-in and is not saved. The session token is kept in local extension storage, so protect your browser profile. Sign in again if the server session expires.
 

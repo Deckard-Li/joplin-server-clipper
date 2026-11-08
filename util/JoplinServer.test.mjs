@@ -14,21 +14,23 @@ describe('Direct Joplin Server clipping', () => {
 	});
 
 	test('validates server URLs and keeps reverse-proxy prefixes', () => {
-		for (const url of ['ftp://example.org', 'http://example.org', 'https://user:password@example.org', 'https://example.org/?token=secret', 'https://example.org/#fragment']) {
+		for (const url of ['ftp://example.org', 'https://user:password@example.org', 'https://example.org/?token=secret', 'https://example.org/#fragment']) {
 			assert.throws(() => new JoplinServer(url));
 		}
 		assert.equal(new JoplinServer('https://example.org/joplin/').baseUrl, 'https://example.org/joplin');
-		assert.equal(new JoplinServer('http://127.0.0.1:22300').baseUrl, 'http://127.0.0.1:22300');
+		for (const url of ['http://127.0.0.1:22300', 'http://192.168.1.20:22300', 'http://10.0.0.20:22300', 'http://joplin.local:22300', 'http://[fd00::1]:22300', 'http://example.org']) {
+			assert.equal(new JoplinServer(`${url}/joplin/`).baseUrl, `${url}/joplin`);
+		}
 	});
 
-	test('authenticates with a JSON request and uses the session header', async () => {
-		const server = new JoplinServer('https://example.org/joplin');
+	test('authenticates to an HTTP server with JSON and uses the session header', async () => {
+		const server = new JoplinServer('http://192.168.1.20:22300/joplin');
 		let requestCount = 0;
 		globalThis.fetch = async (url, options) => {
 			requestCount++;
 			assert.equal(options.redirect, 'error');
 			if (requestCount === 1) {
-				assert.equal(url, 'https://example.org/joplin/api/sessions');
+				assert.equal(url, 'http://192.168.1.20:22300/joplin/api/sessions');
 				assert.deepEqual(JSON.parse(options.body), { email: 'user@example.org', password: 'test-password' });
 				return new Response(JSON.stringify({ id: 'test-session' }));
 			}

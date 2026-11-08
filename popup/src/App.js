@@ -285,7 +285,8 @@ class AppComponent extends Component {
 						this.setState({ connectionBusy: false });
 					}
 				}}>
-					<label>Server URL<input type="url" required placeholder="https://joplin.example.com" value={this.state.serverUrl} onChange={event => this.setState({ serverUrl: event.target.value })}/></label>
+					<label>Server URL<input type="url" required placeholder="http://192.168.1.20:22300" value={this.state.serverUrl} onChange={event => this.setState({ serverUrl: event.target.value })}/></label>
+					{/^http:/i.test(this.state.serverUrl.trim()) ? <p role="alert">HTTP sends your password, session token, and notes unencrypted. Use it only on a trusted local network; use HTTPS over the internet.</p> : null}
 					<label>Email<input type="email" required autoComplete="username" value={this.state.serverEmail} onChange={event => this.setState({ serverEmail: event.target.value })}/></label>
 					<label>Password<input type="password" required autoComplete="current-password" value={this.state.serverPassword} onChange={event => this.setState({ serverPassword: event.target.value })}/></label>
 					<button type="submit" disabled={this.state.connectionBusy}>{this.state.connectionBusy ? 'Connecting...' : 'Sign in'}</button>
