@@ -6,7 +6,7 @@ Bug reports and focused pull requests are welcome. For bugs, include the browser
 
 Use Node.js 22.19 or newer. Run `npm ci`, `npm test`, and `npm run build` from the repository root. Load the built extension in your browser and verify the changed workflow with a test account. For changes to `util/clipperUtils.ts`, rebuild before reloading the extension.
 
-Keep changes focused, preserve upstream attribution and third-party license headers, and use tabs and single quotes in authored JavaScript and TypeScript. Add tests for meaningful behavior and failure cases. Do not commit dependencies, generated bundles, environment files, or credentials.
+Keep changes focused, preserve upstream attribution and third-party license headers, and use tabs and single quotes in authored JavaScript and TypeScript. Add tests for meaningful behavior and failure cases. After source changes, rebuild and commit the updated `popup/build/` files and `content_scripts/clipperUtils.js` so the repository remains directly loadable. Do not commit dependencies, environment files, or credentials.
 
 ## Pull Requests
 

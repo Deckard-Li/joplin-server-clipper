@@ -1,6 +1,4 @@
 node_modules/
-popup/build/
-content_scripts/clipperUtils.js
 dist/
 coverage/
 .env

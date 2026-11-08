@@ -12,7 +12,7 @@ An unofficial, standalone browser extension for clipping web pages directly to a
 
 ## Build
 
-Install Node.js 22.19 or newer, then run:
+The repository includes the built popup and content-script helper, so you can clone or download it and load the extension without installing Node.js. To rebuild from source, install Node.js 22.19 or newer, then run:
 
 ```sh
 git clone https://github.com/Deckard-Li/joplin-server-clipper.git
@@ -26,7 +26,7 @@ The installation command also installs the popup dependencies from its lockfile.
 
 ## Install
 
-**Chrome, Edge, and other Chromium browsers:** Open the browser's extensions page, enable developer mode, select **Load unpacked**, and choose this repository's root folder after building.
+**Chrome, Edge, and other Chromium browsers:** Clone this repository or download and extract its ZIP. Open the browser's extensions page, enable developer mode, select **Load unpacked**, and choose the repository's root folder. No build step is required.
 
 **Firefox:** Open `about:debugging`, select **This Firefox**, choose **Load Temporary Add-on**, and select this repository's `manifest.json`. Temporary add-ons are removed when Firefox restarts; permanent Firefox installation requires Mozilla signing.
 
