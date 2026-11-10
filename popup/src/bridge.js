@@ -2,7 +2,7 @@
 
 import getActiveTabs from '../../util/getActiveTabs.mjs';
 import joplinEnv from '../../util/joplinEnv.mjs';
-import JoplinServer from '../../util/JoplinServer.mjs';
+import JoplinServer, { loadServerCatalog } from '../../util/JoplinServer.mjs';
 import prepareServerClip from './prepareServerClip';
 const { randomClipperPort } = require('./randomClipperPort');
 
@@ -139,7 +139,7 @@ class Bridge {
 		const previousAuthStatus = this.store_.getState().authStatus;
 		this.serverConnection_ = { baseUrl: server.baseUrl, sessionId: server.sessionId };
 		try {
-			await this.loadServerConnection();
+			await this.loadServerConnection(true);
 			await this.storageSet({ serverConnection: this.serverConnection_, selectedFolderId: this.store_.getState().selectedFolderId });
 		} catch (error) {
 			this.serverConnection_ = previousConnection;
@@ -151,13 +151,14 @@ class Bridge {
 	async disconnectServer() {
 		this.serverConnection_ = null;
 		await this.storageSet({ serverConnection: null, selectedFolderId: null });
+		await this.browser().storage.session?.remove('serverCatalog');
 		window.location.reload();
 	}
 
-	async loadServerConnection() {
+	async loadServerConnection(refresh = false) {
 		this.dispatch({ type: 'AUTH_STATE_SET', value: 'starting' });
 		const server = new JoplinServer(this.serverConnection_.baseUrl, this.serverConnection_.sessionId);
-		const { folders, tags } = await server.notebooksAndTags();
+		const { folders, tags } = await loadServerCatalog(server, this.browser().storage.session, refresh);
 		const restoredState = await this.storageGet(['selectedFolderId']);
 		const selectedFolderId = folders.some(folder => folder.id === restoredState.selectedFolderId) ? restoredState.selectedFolderId : folders[0]?.id || null;
 		this.dispatch({ type: 'FOLDERS_SET', folders });
@@ -177,7 +178,7 @@ class Bridge {
 		await server.notebooksAndTags();
 		const folder = await server.saveItem(2, { title, parent_id: '' });
 		await this.storageSet({ selectedFolderId: folder.id });
-		await this.loadServerConnection();
+		await this.loadServerConnection(true);
 	}
 
 	async checkAuth() {

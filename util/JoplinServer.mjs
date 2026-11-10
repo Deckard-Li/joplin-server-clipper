@@ -1,3 +1,20 @@
+export async function loadServerCatalog(server, sessionStorage, refresh = false) {
+	if (sessionStorage) {
+		try {
+			if (refresh) await sessionStorage.remove('serverCatalog');
+			else {
+				const { serverCatalog } = await sessionStorage.get('serverCatalog');
+				if (serverCatalog?.baseUrl === server.baseUrl && serverCatalog.sessionId === server.sessionId && Array.isArray(serverCatalog.folders) && Array.isArray(serverCatalog.tags)) return { folders: serverCatalog.folders, tags: serverCatalog.tags };
+			}
+		} catch {}
+	}
+	const catalog = await server.notebooksAndTags();
+	if (sessionStorage) {
+		try { await sessionStorage.set({ serverCatalog: { ...catalog, baseUrl: server.baseUrl, sessionId: server.sessionId } }); } catch {}
+	}
+	return catalog;
+}
+
 export default class JoplinServer {
 	constructor(baseUrl, sessionId = '') {
 		const url = new URL(baseUrl);

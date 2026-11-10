@@ -291,6 +291,16 @@ class AppComponent extends Component {
 					<label>Password<input type="password" required autoComplete="current-password" value={this.state.serverPassword} onChange={event => this.setState({ serverPassword: event.target.value })}/></label>
 					<button type="submit" disabled={this.state.connectionBusy}>{this.state.connectionBusy ? 'Connecting...' : 'Sign in'}</button>
 				</form> : null}
+				{bridge().isServerConnection() ? <button disabled={this.state.connectionBusy} onClick={async () => {
+					this.setState({ connectionBusy: true, connectionError: '' });
+					try {
+						await bridge().loadServerConnection(true);
+					} catch (error) {
+						this.setState({ connectionError: error.message });
+					} finally {
+						this.setState({ connectionBusy: false });
+					}
+				}}>Refresh notebooks and tags</button> : null}
 				{bridge().isServerConnection() ? <button disabled={this.state.connectionBusy} onClick={() => bridge().disconnectServer()}>Disconnect server</button> : null}
 				{this.state.connectionError ? <p role="alert">{this.state.connectionError}</p> : null}
 			</details>
@@ -334,7 +344,7 @@ class AppComponent extends Component {
 			<div className="App Startup">
 				{this.renderConnectionSettings()}
 				{title}
-				{bridge().isServerConnection() ? (this.state.connectionError ? '' : 'Connecting to Joplin Server...') : msg}
+				{bridge().isServerConnection() ? (this.state.connectionError ? '' : 'Loading notebooks and tags...') : msg}
 			</div>
 		);
 	}
@@ -405,7 +415,7 @@ class AppComponent extends Component {
 			const foundState = this.props.clipperServer.foundState;
 
 			if (foundState === 'found') {
-				msg = bridge().isServerConnection() ? 'Connected to Joplin Server' : `Ready on port ${this.props.clipperServer.port}`;
+				msg = bridge().isServerConnection() ? 'Joplin Server session saved' : `Ready on port ${this.props.clipperServer.port}`;
 				led = led_green;
 			} else {
 				msg = stateToString(foundState);

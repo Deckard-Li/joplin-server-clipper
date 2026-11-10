@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
-import JoplinServer from './JoplinServer.mjs';
+import JoplinServer, { loadServerCatalog } from './JoplinServer.mjs';
 
 const originalFetch = globalThis.fetch;
 const originalBrowser = globalThis.browser;
@@ -21,6 +21,57 @@ describe('Direct Joplin Server clipping', () => {
 		for (const url of ['http://127.0.0.1:22300', 'http://192.168.1.20:22300', 'http://10.0.0.20:22300', 'http://joplin.local:22300', 'http://[fd00::1]:22300', 'http://example.org']) {
 			assert.equal(new JoplinServer(`${url}/joplin/`).baseUrl, `${url}/joplin`);
 		}
+	});
+
+	test('reuses the catalog across popup instances and refreshes it explicitly', async () => {
+		let cached = {};
+		let loads = 0;
+		const storage = {
+			get: async () => cached,
+			set: async value => { cached = value; },
+			remove: async () => { cached = {}; },
+		};
+		const createServer = () => {
+			const server = new JoplinServer('https://example.org', 'session');
+			server.notebooksAndTags = async () => ({ folders: [{ id: `${++loads}` }], tags: [] });
+			return server;
+		};
+		assert.equal((await loadServerCatalog(createServer(), storage)).folders[0].id, '1');
+		assert.equal((await loadServerCatalog(createServer(), storage)).folders[0].id, '1');
+		assert.equal(loads, 1);
+		assert.equal((await loadServerCatalog(createServer(), storage, true)).folders[0].id, '2');
+		assert.equal((await loadServerCatalog(createServer(), storage)).folders[0].id, '2');
+		cached = {};
+		assert.equal((await loadServerCatalog(createServer(), storage)).folders[0].id, '3');
+	});
+
+	test('never reuses another server or session catalog and falls back when session storage is unavailable', async () => {
+		const server = new JoplinServer('https://example.org', 'session');
+		let loads = 0;
+		server.notebooksAndTags = async () => { loads++; return { folders: [], tags: [] }; };
+		for (const cached of [
+			{ baseUrl: 'https://other.example.org', sessionId: 'session' },
+			{ baseUrl: server.baseUrl, sessionId: 'other-session' },
+			{ baseUrl: server.baseUrl, sessionId: 'session', folders: null },
+		]) {
+			const storage = { get: async () => ({ serverCatalog: { folders: [{ id: 'foreign' }], tags: [], ...cached } }), set: async () => {} };
+			assert.deepEqual(await loadServerCatalog(server, storage), { folders: [], tags: [] });
+		}
+		assert.equal(loads, 3);
+		const unavailable = { get: async () => { throw new Error('Unavailable'); }, set: async () => { throw new Error('Unavailable'); } };
+		assert.deepEqual(await loadServerCatalog(server, unavailable), { folders: [], tags: [] });
+		assert.deepEqual(await loadServerCatalog(server), { folders: [], tags: [] });
+		assert.equal(loads, 5);
+	});
+
+	test('invalidates a forced refresh before propagating discovery failures', async () => {
+		const server = new JoplinServer('https://example.org', 'session');
+		let cached = { serverCatalog: { baseUrl: server.baseUrl, sessionId: server.sessionId, folders: [], tags: [] } };
+		const storage = { get: async () => cached, remove: async () => { cached = {}; } };
+		server.notebooksAndTags = async () => { throw new Error('Session expired'); };
+		await assert.rejects(loadServerCatalog(server, storage, true), /Session expired/);
+		assert.deepEqual(cached, {});
+		await assert.rejects(loadServerCatalog(server, storage), /Session expired/);
 	});
 
 	test('authenticates to an HTTP server with JSON and uses the session header', async () => {
