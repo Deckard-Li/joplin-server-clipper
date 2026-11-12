@@ -1,16 +1,16 @@
-export async function loadServerCatalog(server, sessionStorage, refresh = false) {
-	if (sessionStorage) {
+export async function loadServerCatalog(server, storage, refresh = false) {
+	if (storage) {
 		try {
-			if (refresh) await sessionStorage.remove('serverCatalog');
+			if (refresh) await storage.remove('serverCatalog');
 			else {
-				const { serverCatalog } = await sessionStorage.get('serverCatalog');
+				const { serverCatalog } = await storage.get('serverCatalog');
 				if (serverCatalog?.baseUrl === server.baseUrl && serverCatalog.sessionId === server.sessionId && Array.isArray(serverCatalog.folders) && Array.isArray(serverCatalog.tags)) return { folders: serverCatalog.folders, tags: serverCatalog.tags };
 			}
 		} catch {}
 	}
 	const catalog = await server.notebooksAndTags();
-	if (sessionStorage) {
-		try { await sessionStorage.set({ serverCatalog: { ...catalog, baseUrl: server.baseUrl, sessionId: server.sessionId } }); } catch {}
+	if (storage) {
+		try { await storage.set({ serverCatalog: { ...catalog, baseUrl: server.baseUrl, sessionId: server.sessionId } }); } catch {}
 	}
 	return catalog;
 }

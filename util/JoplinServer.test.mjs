@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
+import { readFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
 import JoplinServer, { loadServerCatalog } from './JoplinServer.mjs';
 
 const originalFetch = globalThis.fetch;
@@ -7,6 +9,36 @@ const originalBrowser = globalThis.browser;
 const folderId = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
 describe('Direct Joplin Server clipping', () => {
+	test('rechecks expanded content visibility after earlier complete-page clipping', async () => {
+		const source = await readFile(new URL('../content_scripts/index.js', import.meta.url), 'utf8');
+		const start = source.indexOf('function preProcessDocument(');
+		const end = source.indexOf('\n\t// This sets the PRE', start);
+		const preprocess = runInNewContext(`(${source.slice(start, end).trim()})`, { window: { getComputedStyle: node => node.computedStyle } });
+		const createElement = children => {
+			const classes = new Set();
+			const element = { nodeName: 'DIV', nodeType: 1, childNodes: children, computedStyle: { display: 'block', visibility: 'visible' }, classList: { add: value => classes.add(value), remove: value => classes.delete(value), contains: value => classes.has(value) } };
+			for (const child of children) child.parentNode = element;
+			return element;
+		};
+		const nested = createElement([]);
+		const expanded = createElement([nested]);
+		const document = createElement([expanded]);
+		expanded.computedStyle.display = 'none';
+		preprocess(document);
+		assert.equal(expanded.classList.contains('joplin-clipper-hidden'), true);
+		expanded.computedStyle.display = 'block';
+		nested.computedStyle.visibility = 'hidden';
+		preprocess(document);
+		assert.equal(expanded.classList.contains('joplin-clipper-hidden'), false);
+		assert.equal(nested.classList.contains('joplin-clipper-hidden'), true);
+		nested.computedStyle.visibility = 'visible';
+		preprocess(document);
+		assert.equal(nested.classList.contains('joplin-clipper-hidden'), false);
+		expanded.computedStyle.display = 'none';
+		preprocess(document);
+		assert.equal(expanded.classList.contains('joplin-clipper-hidden'), true);
+	});
+
 	afterEach(() => {
 		globalThis.fetch = originalFetch;
 		if (originalBrowser === undefined) delete globalThis.browser;
@@ -23,14 +55,16 @@ describe('Direct Joplin Server clipping', () => {
 		}
 	});
 
-	test('reuses the catalog across popup instances and refreshes it explicitly', async () => {
-		let cached = {};
+	test('restores the saved account and catalog after restart and refreshes it explicitly', async () => {
+		const connection = { baseUrl: 'https://example.org', sessionId: 'session' };
+		let cached = { serverConnection: connection };
 		let loads = 0;
-		const storage = {
+		const createStorage = () => ({
 			get: async () => cached,
-			set: async value => { cached = value; },
-			remove: async () => { cached = {}; },
-		};
+			set: async value => { cached = { ...cached, ...value }; },
+			remove: async key => { delete cached[key]; },
+		});
+		const storage = createStorage();
 		const createServer = () => {
 			const server = new JoplinServer('https://example.org', 'session');
 			server.notebooksAndTags = async () => ({ folders: [{ id: `${++loads}` }], tags: [] });
@@ -41,11 +75,16 @@ describe('Direct Joplin Server clipping', () => {
 		assert.equal(loads, 1);
 		assert.equal((await loadServerCatalog(createServer(), storage, true)).folders[0].id, '2');
 		assert.equal((await loadServerCatalog(createServer(), storage)).folders[0].id, '2');
-		cached = {};
+		const persisted = JSON.stringify(cached);
+		cached = JSON.parse(persisted);
+		assert.equal((await loadServerCatalog(createServer(), createStorage())).folders[0].id, '2');
+		assert.equal(loads, 2);
+		assert.deepEqual(cached.serverConnection, connection);
+		await storage.remove('serverCatalog');
 		assert.equal((await loadServerCatalog(createServer(), storage)).folders[0].id, '3');
 	});
 
-	test('never reuses another server or session catalog and falls back when session storage is unavailable', async () => {
+	test('never reuses another server or session catalog and falls back when storage is unavailable', async () => {
 		const server = new JoplinServer('https://example.org', 'session');
 		let loads = 0;
 		server.notebooksAndTags = async () => { loads++; return { folders: [], tags: [] }; };

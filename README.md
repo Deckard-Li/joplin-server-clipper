@@ -39,11 +39,11 @@ The installation command also installs the popup dependencies from its lockfile.
 
 Both HTTP and HTTPS are supported, including local-network URLs such as `http://192.168.1.20:22300` or `http://joplin.local:22300`. HTTP sends your password, session token, and note content unencrypted: use it only on a trusted local network and use HTTPS over the internet. This extension supports Joplin Server, not arbitrary WebDAV endpoints. New clips appear in other Joplin clients on their next sync. Select **Disconnect server** to return to the desktop connection.
 
-The password is used only for sign-in and is not saved. The session token is kept in local extension storage, so protect your browser profile. Sign in again if the server session expires.
+The password is used only for sign-in and is not saved. The session token is kept in persistent local extension storage, so protect your browser profile. The saved account is restored automatically when you reopen the browser; closing the browser does not log you out. Use **Connection > Disconnect server** to forget the account and its cached notebook/tag choices. Sign in again if the server expires or revokes the session; the extension cannot silently renew an invalid session without credentials.
 
-Closing the popup does not sign you out. After the first successful notebook discovery, reopening it reuses the saved session and a browser-session cache of notebooks and tags without contacting the server first. There is no continuously open connection or keep-alive loop; browsers can suspend extension background workers. The server is contacted when clipping, and uploads still validate the account and destination before writing.
+After the first successful notebook discovery, reopening the popup reuses the saved session and a persistent cache of notebooks and tags without contacting the server first, including after a browser restart or extension reload. There is no continuously open connection or keep-alive loop; browsers can suspend extension background workers. The server is contacted when clipping, and uploads still validate the account and destination before writing. Displaying cached choices does not verify that the server session is still valid.
 
-Use **Connection > Refresh notebooks and tags** after creating, renaming, or deleting notebooks or tags in another client. Signing in again and creating a notebook from the clipper also refresh this cache. Browser restart, extension reload, or disconnect clears the session cache, so the first opening afterwards must discover notebooks again. Browsers without session-storage support fall back to fresh discovery. Cached choices do not guarantee that the server is online or that your login is still valid; network and session errors are reported when a request is made.
+Use **Connection > Refresh notebooks and tags** after creating, renaming, or deleting notebooks or tags in another client. Signing in again and creating a notebook from the clipper also refresh this cache. Cache entries are scoped to the server URL and session token, so changing accounts cannot reuse another account's choices. Clearing extension data or uninstalling the extension removes its saved login. If storage is unavailable or there is no matching cache yet, the popup performs fresh discovery. Network and session errors are reported when a request is made.
 
 ## Limitations
 
@@ -52,7 +52,7 @@ Use **Connection > Refresh notebooks and tags** after creating, renaming, or del
 - The server's session API does not support accounts requiring two-factor authentication.
 - Images and embedded attachments are downloaded without website cookies. Failed downloads fail the clip rather than silently omitting content. Each resource is limited to 20 MB.
 - External stylesheets are not archived. HTML clips preserve extracted HTML and inline styling.
-- Initial notebook discovery, explicit refresh, and live pre-upload validation read sync-item metadata and can be slow for large accounts. Reopening the popup in the same browser session reuses cached choices.
+- Initial notebook discovery, explicit refresh, and live pre-upload validation read sync-item metadata and can be slow for large accounts. Reopening the popup, including after a browser restart, reuses cached choices.
 - Screenshots upload in the background; reopen the popup to see the result. Shortcut clipping retains the upstream popup-dependent behavior.
 - Uploads are not transactional. A failed clip can leave uploaded resources or a note without all its tags; check before retrying.
 

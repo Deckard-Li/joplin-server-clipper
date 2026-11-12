@@ -146,6 +146,7 @@
 			const nodeName = node.nodeName.toLowerCase();
 			const nodeParent = node.parentNode;
 			const nodeParentName = nodeParent ? nodeParent.nodeName.toLowerCase() : '';
+			if (node.classList) node.classList.remove('joplin-clipper-hidden');
 			const computedStyle = node.nodeType === 1 ? window.getComputedStyle(node) : {};
 
 			let isVisible = node.nodeType === 1 ? computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden' : true;

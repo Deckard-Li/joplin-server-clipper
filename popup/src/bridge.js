@@ -150,7 +150,7 @@ class Bridge {
 
 	async disconnectServer() {
 		this.serverConnection_ = null;
-		await this.storageSet({ serverConnection: null, selectedFolderId: null });
+		await this.storageSet({ serverConnection: null, selectedFolderId: null, serverCatalog: null });
 		await this.browser().storage.session?.remove('serverCatalog');
 		window.location.reload();
 	}
@@ -158,7 +158,7 @@ class Bridge {
 	async loadServerConnection(refresh = false) {
 		this.dispatch({ type: 'AUTH_STATE_SET', value: 'starting' });
 		const server = new JoplinServer(this.serverConnection_.baseUrl, this.serverConnection_.sessionId);
-		const { folders, tags } = await loadServerCatalog(server, this.browser().storage.session, refresh);
+		const { folders, tags } = await loadServerCatalog(server, this.browser().storage.local, refresh);
 		const restoredState = await this.storageGet(['selectedFolderId']);
 		const selectedFolderId = folders.some(folder => folder.id === restoredState.selectedFolderId) ? restoredState.selectedFolderId : folders[0]?.id || null;
 		this.dispatch({ type: 'FOLDERS_SET', folders });
